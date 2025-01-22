@@ -4,6 +4,7 @@ export default class UserExchangeHistory extends Model {}
 Object.assign(UserExchangeHistory.prototype, {
   money : Model.attribute('money'),
   type : Model.attribute('type'),
+  credits : Model.attribute('credits'),
   tx_hash : Model.attribute('tx_hash'),
   created_at : Model.attribute('created_at'),
 })

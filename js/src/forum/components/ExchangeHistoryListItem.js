@@ -12,10 +12,10 @@ export default class ExchangeListItem extends Component {
     const tx_hash = userExchangeHistory.tx_hash();
     return (
       <tr>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd;">{created_at}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd;">{type === 0 ? "能量转积分" : "能量提现"}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd;">{money}</td>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd;">
+        <td>{created_at}</td>
+        <td>{type === 0 ? "能量转积分" : "能量提现"}</td>
+        <td>{money}</td>
+        <td>
           <a href={`https://www.oklink.com/zh-hans/polygon/tx/${tx_hash}`} target="_blank">
             {tx_hash}
           </a>

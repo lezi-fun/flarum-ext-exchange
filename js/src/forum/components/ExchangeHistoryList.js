@@ -71,13 +71,13 @@ export default class ExchangeList extends Component {
           {app.translator.trans('nodeloc-exchange.forum.create_exchange')}
         </Button>
         <ul style="margin: 0;padding: 0;list-style-type: none;position: relative;">
-        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <table>
                     <thead>
                       <tr>
-                        <th style="padding: 8px; border-bottom: 1px solid #ddd;">{app.translator.trans('nodeloc-exchange.forum.record.date')}</th>
-                        <th style="padding: 8px; border-bottom: 1px solid #ddd;">{app.translator.trans('nodeloc-exchange.forum.record.type')}</th>
-                        <th style="padding: 8px; border-bottom: 1px solid #ddd;">{app.translator.trans('nodeloc-exchange.forum.record.money-out')}</th>
-                        <th style="padding: 8px; border-bottom: 1px solid #ddd;">{app.translator.trans('nodeloc-exchange.forum.record.tx-link')}</th>
+                        <th>{app.translator.trans('nodeloc-exchange.forum.record.date')}</th>
+                        <th>{app.translator.trans('nodeloc-exchange.forum.record.type')}</th>
+                        <th>{app.translator.trans('nodeloc-exchange.forum.record.money-out')}</th>
+                        <th>{app.translator.trans('nodeloc-exchange.forum.record.tx-link')}</th>
                       </tr>
                     </thead>
                     <tbody>

@@ -116,50 +116,76 @@ class ExchangeRepository
         }
         return true;
     }
-
-    /**
-     * 生成一个 key
-     *
-     * @param int $user_id
-     * @return string
-     * @throws \Exception
-     */
-    private function requestExchange($credits): string
+    private function requestExchange($credits)
     {
-        // 设置API端点URL
-        $url = $this->api_url.'/api/admin/v1/users/' . $this->email . '/' . $credits;
-
-        // 设置请求头部，包含Bearer Token
-        $headers = [
-            'Authorization: Bearer ' . $this->api_token, // 注意这里的 Bearer 关键字
-            'Accept: application/json',
+        // Step 1: 查询用户信息
+        $userInfoUrl = $this->api_url . '/api/admin/client/get';
+        $queryParams = [
+            'email' => $this->email,
         ];
 
-        // 初始化cURL
         $curl = curl_init();
-        // 设置cURL选项
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $userInfoUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_USERPWD => "{$this->admin}:{$this->api_token}", // Basic Auth
+            CURLOPT_HTTPAUTH => CURLAUTH_BASIC,
+            CURLOPT_HTTPGET => true,
+            CURLOPT_POSTFIELDS => http_build_query($queryParams),
+        ]);
+
+        $userResponse = curl_exec($curl);
+
+        if (empty($userResponse)) {
+            throw new \RuntimeException('无法查询用户信息，请联系管理组');
+        }
+
+        $userResult = json_decode($userResponse, true);
+
+        // 检查查询是否成功
+        if (isset($userResult['error']) && $userResult['error']) {
+            throw new \RuntimeException("用户查询失败: {$userResult['error']['message']}");
+        }
+
+        $userId = $userResult['result']['id'] ?? null;
+
+        if (empty($userId)) {
+            throw new \RuntimeException('未找到用户，请检查邮箱地址是否正确');
+        }
+
+        // Step 2: 为用户充值
+        $url = $this->api_url . '/api/admin/client/balance_add_funds';
+
+        $params = [
+            'id' => $userId,
+            'amount' => $credits,
+            'description' => "Convert credits for user {$this->email}",
+        ];
+
         curl_setopt_array($curl, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_POST => true, // 设置为 POST 请求
+            CURLOPT_USERPWD => "{$this->admin}:{$this->api_token}", // Basic Auth
+            CURLOPT_HTTPAUTH => CURLAUTH_BASIC,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query($params),
         ]);
 
-        // 执行请求并获取响应
         $response = curl_exec($curl);
 
-        // 检查响应是否为空
         if (empty($response)) {
-            // 响应为空，返回一个默认值或者抛出异常
             throw new \RuntimeException('积分转换出错啦~请联系管理组');
         }
 
-        // 关闭cURL
         curl_close($curl);
 
-        // 解析JSON响应
-        $responseData = json_decode($response, true);
-        return $responseData;
+        $result = json_decode($response, true);
+
+        if (isset($result['error']) && $result['error']) {
+            throw new \RuntimeException("充值失败: {$result['error']['message']}");
+        }
+
+        return $result;
     }
 
     /**
@@ -182,13 +208,13 @@ class ExchangeRepository
         $money = $actor->getAttribute('money');
         $this->checkBuyMoney($money, $credits);
         // 发送远程请求
-        //$responseData = $this->requestExchange($credits);
+        $responseData = $this->requestExchange($credits);
         // 提取success和message字段
-        //$success = $responseData['success'] ?? false;
-        //$message = $responseData['message'] ?? '';
+        $success = $responseData['success'] ?? false;
+        $message = $responseData['message'] ?? '';
 
         // 进行下一步操作，例如根据success和message做相应处理
-        //if ($success) {
+        if ($success) {
             // 扣减金额
             $actor->money -= $this->exchange_rate * $credits;
             $source = 'EXCHANGE';
@@ -196,16 +222,17 @@ class ExchangeRepository
 
             $this->events->dispatch(new MoneyHistoryEvent($actor, -$this->exchange_rate * $credits, $source, $sourceDesc));
             $actor->save();
+            // 创建邀请码
             $record = UserExchangeHistory::create([
                 'user_id' => $actor->id,
                 'money' => $this->exchange_rate * $credits,
-                'type' => 0,
+                'credits' => $credits,
             ]);
 
             return $record;
-        //} else {
-        //    throw new \RuntimeException($message);
-        //}
+        } else {
+            throw new \RuntimeException($message);
+        }
 
 
     }
